@@ -14,8 +14,10 @@ except ImportError:
 
 class FastForward():
 
-    def __init__(self, loop):
+    def __init__(self, loop, *, start_time=None):
         self._loop = loop
+        self._time = start_time or 0.0
+        self._target_time = start_time or 0.0
 
     def __enter__(self):
         self._original_call_later = self._loop.call_later
@@ -29,8 +31,6 @@ class FastForward():
 
         self._callbacks_queue = queue.PriorityQueue()
         self._forwards_queue = queue.PriorityQueue()
-        self._target_time = 0.0
-        self._time = 0.0
         return self
 
     def __exit__(self, *_, **__):
@@ -40,7 +40,10 @@ class FastForward():
         asyncio.sleep = self._original_sleep
 
     def __call__(self, forward_seconds):
-        self._target_time += forward_seconds
+        try:
+            self._target_time += forward_seconds.total_seconds()
+        except AttributeError:
+            self._target_time += forward_seconds
         acheived_target = asyncio.Event()
         callback = create_callback(self._target_time, acheived_target.set, (), self._loop, None)
         self._forwards_queue.put(callback)

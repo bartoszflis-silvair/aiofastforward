@@ -12,6 +12,8 @@ from unittest.mock import (
     patch,
 )
 
+from logging import Logger
+
 import aiofastforward
 
 
@@ -151,19 +153,23 @@ class TestCallLater(TestCase):
 
 class TestCallAt(TestCase):
 
+    start_times = [None, 1.0]
+
     @async_test
     async def test_concurrent_called_in_order(self):
 
-        loop = asyncio.get_event_loop()
+        for start_time in self.start_times:
+            with self.subTest():
+                loop = asyncio.get_event_loop()
 
-        with aiofastforward.FastForward(loop) as forward:
-            callback = Mock()
-            now = loop.time()
-            loop.call_at(now + 1, callback, 0)
-            loop.call_at(now + 1, callback, 1)
+                with aiofastforward.FastForward(loop, start_time=start_time) as forward:
+                    callback = Mock()
+                    now = loop.time()
+                    loop.call_at(now + 1, callback, 0)
+                    loop.call_at(now + 1, callback, 1)
 
-            forward(1)
-            self.assertEqual(callback.mock_calls, [call(0), call(1)])
+                    forward(1)
+                    self.assertEqual(callback.mock_calls, [call(0), call(1)])
 
     @async_test
     async def test_is_cumulative(self):
