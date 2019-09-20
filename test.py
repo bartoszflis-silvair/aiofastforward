@@ -12,6 +12,10 @@ from unittest.mock import (
     patch,
 )
 
+from datetime import datetime, timedelta, tzinfo
+
+from dateutil.tz import UTC
+
 import aiofastforward
 
 
@@ -310,6 +314,37 @@ class TestTime(TestCase):
             pass
 
         self.assertEqual(loop.time, original_time)
+
+    @async_test
+    async def test_rtc_moves_forward_with_loop(self):
+
+        loop = asyncio.get_event_loop()
+
+        rtc_start = datetime(year=2019, month=1, day=1).replace(tzinfo=UTC)
+
+        async def sleeper():
+            await asyncio.sleep(1)
+
+        with aiofastforward.FastForward(loop=loop, rtc_start=rtc_start.timestamp()) as ff:
+            ff(1)
+            await sleeper()
+
+            self.assertEqual(datetime.now().replace(tzinfo=UTC), rtc_start + timedelta(seconds=1))
+
+    @async_test
+    async def test_rtc_moves_forward_with_call_later(self):
+
+        loop = asyncio.get_event_loop()
+
+        rtc_start = datetime(year=2019, month=1, day=1).replace(tzinfo=UTC)
+
+        def assertion():
+            self.assertEqual(datetime.now().replace(tzinfo=UTC), rtc_start + timedelta(seconds=1))
+
+        with aiofastforward.FastForward(loop=loop, rtc_start=rtc_start.timestamp()) as ff:
+            loop.call_later(1, assertion)
+            await ff(1)
+
 
 
 class TestSleep(TestCase):

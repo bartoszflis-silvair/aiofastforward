@@ -1,5 +1,8 @@
 import asyncio
 import queue
+from datetime import datetime
+
+from freezegun import freeze_time
 
 try:
     import contextvars
@@ -14,8 +17,9 @@ except ImportError:
 
 class FastForward():
 
-    def __init__(self, loop):
+    def __init__(self, loop, rtc_start: float = 0.0):
         self._loop = loop
+        self._rtc_start = rtc_start
 
     def __enter__(self):
         self._original_call_later = self._loop.call_later
@@ -31,6 +35,9 @@ class FastForward():
         self._forwards_queue = queue.PriorityQueue()
         self._target_time = 0.0
         self._time = 0.0
+
+        self._freezer = freeze_time(datetime.utcfromtimestamp(self._rtc_start), tz_offset=0)
+        self._frozen_rtc = self._freezer.start()
         return self
 
     def __exit__(self, *_, **__):
@@ -38,6 +45,8 @@ class FastForward():
         self._loop.call_later = self._original_call_later
         self._loop.time = self._original_time
         asyncio.sleep = self._original_sleep
+
+        self._freezer.stop()
 
     def __call__(self, forward_seconds):
         self._target_time += forward_seconds
@@ -68,6 +77,7 @@ class FastForward():
     def _progress_time(self, queue):
         callback = queue.get()
         self._time = callback._when
+        self._frozen_rtc.move_to(datetime.utcfromtimestamp(self._rtc_start + self._time))
         if not callback._cancelled:
             callback._run()
 
