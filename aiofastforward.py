@@ -36,7 +36,7 @@ class FastForward():
         self._target_time = 0.0
         self._time = 0.0
 
-        self._freezer = freeze_time(datetime.utcfromtimestamp(self._rtc_start), tz_offset=0)
+        self._freezer = freeze_time(datetime.fromtimestamp(self._rtc_start), tz_offset=0)
         self._frozen_rtc = self._freezer.start()
         return self
 
@@ -77,7 +77,7 @@ class FastForward():
     def _progress_time(self, queue):
         callback = queue.get()
         self._time = callback._when
-        self._frozen_rtc.move_to(datetime.utcfromtimestamp(self._rtc_start + self._time))
+        self._frozen_rtc.move_to(datetime.fromtimestamp(self._rtc_start + self._time))
         if not callback._cancelled:
             callback._run()
 

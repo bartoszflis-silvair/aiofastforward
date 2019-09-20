@@ -320,7 +320,7 @@ class TestTime(TestCase):
 
         loop = asyncio.get_event_loop()
 
-        rtc_start = datetime(year=2019, month=1, day=1).replace(tzinfo=UTC)
+        rtc_start = datetime(year=2019, month=1, day=1)
 
         async def sleeper():
             await asyncio.sleep(1)
@@ -329,17 +329,17 @@ class TestTime(TestCase):
             ff(1)
             await sleeper()
 
-            self.assertEqual(datetime.now().replace(tzinfo=UTC), rtc_start + timedelta(seconds=1))
+            self.assertEqual(datetime.now(), rtc_start + timedelta(seconds=1))
 
     @async_test
     async def test_rtc_moves_forward_with_call_later(self):
 
         loop = asyncio.get_event_loop()
 
-        rtc_start = datetime(year=2019, month=1, day=1).replace(tzinfo=UTC)
+        rtc_start = datetime(year=2019, month=1, day=1)
 
         def assertion():
-            self.assertEqual(datetime.now().replace(tzinfo=UTC), rtc_start + timedelta(seconds=1))
+            self.assertEqual(datetime.now(), rtc_start + timedelta(seconds=1))
 
         with aiofastforward.FastForward(loop=loop, rtc_start=rtc_start.timestamp()) as ff:
             loop.call_later(1, assertion)
